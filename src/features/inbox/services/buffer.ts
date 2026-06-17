@@ -204,8 +204,12 @@ async function consolidateBatch(
     switch (msg.type) {
       case "audio":
       case "voice":
+        // The transcript IS the customer's message — pass it through as plain
+        // text. The old "[Nota de voz del cliente]:" prefix cued the model to
+        // disclaim that it "can't hear voice notes" even though the transcript
+        // was present, so it answered with a useless placeholder.
         return transcript
-          ? `[Nota de voz del cliente]: ${transcript}`
+          ? transcript
           : "[El cliente envió una nota de voz que no se pudo transcribir; pídele que escriba su mensaje]";
       case "image":
         if (description)

@@ -55,9 +55,17 @@ export function WorkspacesTable({ workspaces }: Props) {
   }
 
   // Set the active-workspace context, then navigate into the app for it.
+  // The action only sets the cookie (no redirectTo); we navigate client-side —
+  // mirroring WorkspaceSwitcher. A redirect() inside startTransition does not
+  // navigate reliably on Next 16 / React 19, which left this button mute.
   function handleEnter(workspaceId: string, to: string) {
     startRefresh(async () => {
-      await switchWorkspace(workspaceId, to);
+      const result = await switchWorkspace(workspaceId);
+      if (result?.error) {
+        toast.error(result.error);
+        return;
+      }
+      router.push(to);
     });
   }
 

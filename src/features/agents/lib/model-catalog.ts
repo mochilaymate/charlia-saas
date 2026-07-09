@@ -23,6 +23,19 @@ export interface CatalogProvider {
 
 export const MODEL_CATALOG: CatalogProvider[] = [
   {
+    provider: "openrouter",
+    label: "OpenRouter",
+    models: [
+      {
+        id: "meta-llama/llama-3.1-70b-instruct:free",
+        label: "Llama 3.1 70B (Free)",
+        tier: "fast",
+        recommendation:
+          "Modelo free rápido sin razonamiento expuesto. Bueno para respuestas directas. Costo cero.",
+      },
+    ],
+  },
+  {
     provider: "anthropic",
     label: "Anthropic",
     models: [

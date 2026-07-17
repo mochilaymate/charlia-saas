@@ -73,7 +73,7 @@ export interface ProcessBatchResult {
 function svc() {
   return createSbClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    process.env.SUPABASE_KEY_B64!,
   );
 }
 
@@ -449,7 +449,7 @@ export async function processNextBatch(): Promise<ProcessBatchResult> {
     });
 
     if (!dispatchResult.ok) {
-      console.error("[buffer] dispatchText failed:", dispatchResult.error);
+      throw new Error(`Failed to send AI reply: ${dispatchResult.error}`);
     }
 
     // ── 10b. Mark batch as processed ────────────────────────────────────────
@@ -565,7 +565,7 @@ async function markBatchProcessed(
     .eq("id", batchId);
 
   if (error) {
-    console.error("[buffer] markBatchProcessed error:", error);
+    throw new Error(`Failed to mark batch processed: ${error.message}`);
   }
 }
 
@@ -649,10 +649,13 @@ async function runSetterEvaluation(params: SetterEvalParams): Promise<void> {
       if (evaluation.knocked_out) update.stage = "lost";
       else if (evaluation.qualified) update.stage = "qualified";
     }
-    await supabase.from("contacts").update(update).eq("id", contactId);
+    const { error: updateError } = await supabase.from("contacts").update(update).eq("id", contactId);
+    if (updateError) {
+      throw new Error(`Failed to update contact for setter evaluation: ${updateError.message}`);
+    }
 
     // Observability event (surfaces in the conversation timeline).
-    await supabase.from("events").insert({
+    const { error: eventError } = await supabase.from("events").insert({
       type: "setter_evaluation",
       level: evaluation.knocked_out ? "warn" : "info",
       workspace_id: workspaceId,
@@ -668,6 +671,10 @@ async function runSetterEvaluation(params: SetterEvalParams): Promise<void> {
         post_action_type: (cfg.post_action as { type?: string }).type ?? null,
       },
     });
+
+    if (eventError) {
+      throw new Error(`Failed to record setter evaluation event: ${eventError.message}`);
+    }
 
     // Execute the post_action only for a qualified lead (the configured "win"
     // action). Knocked-out leads are marked 'lost' above; we do not fire the

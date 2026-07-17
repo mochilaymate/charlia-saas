@@ -70,7 +70,7 @@ export async function completeOnboarding(
   //    (the user has no membership yet, so RLS blocks inserts)
   const serviceClient = createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    process.env.SUPABASE_KEY_B64!,
   );
 
   // 4. Generate unique slug

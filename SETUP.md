@@ -16,7 +16,7 @@ cp .env.local.example .env.local
 Necesitas:
 - `NEXT_PUBLIC_SUPABASE_URL` — de Supabase (Settings → API)
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — de Supabase (Settings → API)
-- `SUPABASE_SERVICE_ROLE_KEY` — de Supabase (Settings → API)
+- `SUPABASE_KEY_B64` — de Supabase (Settings → API)
 - `OPENROUTER_API_KEY` — de OpenRouter (https://openrouter.ai/keys)
 
 ### 3. Dev server
@@ -44,7 +44,7 @@ vercel link
 ```bash
 vercel env add NEXT_PUBLIC_SUPABASE_URL production
 vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY production
-vercel env add SUPABASE_SERVICE_ROLE_KEY production
+vercel env add SUPABASE_KEY_B64 production
 vercel env add OPENROUTER_API_KEY production
 vercel env add OPENROUTER_DEFAULT_MODEL production
 vercel env add ENCRYPTION_KEY production

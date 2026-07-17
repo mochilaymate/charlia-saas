@@ -40,7 +40,7 @@ const GENERATED = {
 const PASTED = [
   "NEXT_PUBLIC_SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-  "SUPABASE_SERVICE_ROLE_KEY",
+  "SUPABASE_KEY_B64",
   "OPENROUTER_API_KEY",
   "OPENROUTER_DEFAULT_MODEL",
 ];
@@ -347,7 +347,7 @@ Uso: node scripts/setup.mjs <comando>
   help           Muestra esta ayuda
 
 Las keys pegadas se pasan como variables de entorno, p.ej.:
-  NEXT_PUBLIC_SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... node scripts/setup.mjs env
+  NEXT_PUBLIC_SUPABASE_URL=... SUPABASE_KEY_B64=... node scripts/setup.mjs env
 
 site-url / cron-apply usan un token de Management API (NO se guarda en .env.local):
   SUPABASE_ACCESS_TOKEN=sbp_... node scripts/setup.mjs site-url`);

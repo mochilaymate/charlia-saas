@@ -1,4 +1,4 @@
-import { createClient as createSbClient } from "@supabase/supabase-js";
+import { svc } from "@/lib/supabase-svc";
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Signup gate — one-click-install bootstrap.
@@ -9,10 +9,7 @@ import { createClient as createSbClient } from "@supabase/supabase-js";
 // ──────────────────────────────────────────────────────────────────────────────
 
 function admin() {
-  return createSbClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  );
+  return svc();
 }
 
 /**

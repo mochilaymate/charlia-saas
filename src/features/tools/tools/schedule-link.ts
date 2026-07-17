@@ -11,7 +11,7 @@ type Args = z.infer<typeof schema>;
 async function run(_args: Args, ctx: ToolContext): Promise<ToolResult> {
   const supabase = createSbClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    process.env.SUPABASE_KEY_B64!,
   );
 
   // The scheduling link is configured per workspace in tool_configs.config

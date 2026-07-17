@@ -12,7 +12,7 @@
 //
 // Config (env vars; SUPABASE_* fall back to .env.local):
 //   NEXT_PUBLIC_SUPABASE_URL     Supabase project URL          (required)
-//   SUPABASE_SERVICE_ROLE_KEY    service_role key              (required)
+//   SUPABASE_KEY_B64    service_role key              (required)
 //   ADMIN_EMAIL                  super admin login email       (required)
 //   ADMIN_PASSWORD               super admin login password    (required, >= 8)
 //   ADMIN_NAME                   full name      (default: "Super Admin")
@@ -49,14 +49,14 @@ const FILE = envFile();
 const cfg = (k, fallback) => process.env[k] || FILE[k] || fallback;
 
 const SUPABASE_URL = (cfg("NEXT_PUBLIC_SUPABASE_URL") || "").replace(/\/+$/, "");
-const SERVICE_KEY = cfg("SUPABASE_SERVICE_ROLE_KEY");
+const SERVICE_KEY = cfg("SUPABASE_KEY_B64");
 const ADMIN_EMAIL = cfg("ADMIN_EMAIL");
 const ADMIN_PASSWORD = cfg("ADMIN_PASSWORD");
 const ADMIN_NAME = cfg("ADMIN_NAME", "Super Admin");
 
 // ── validation ──────────────────────────────────────────────────────────────
 if (!SUPABASE_URL || /your-/.test(SUPABASE_URL)) fail("Falta NEXT_PUBLIC_SUPABASE_URL (corre setup.mjs env primero).");
-if (!SERVICE_KEY || /your-/.test(SERVICE_KEY)) fail("Falta SUPABASE_SERVICE_ROLE_KEY.");
+if (!SERVICE_KEY || /your-/.test(SERVICE_KEY)) fail("Falta SUPABASE_KEY_B64.");
 if (!ADMIN_EMAIL || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(ADMIN_EMAIL)) fail("ADMIN_EMAIL inválido o ausente.");
 if (!ADMIN_PASSWORD || ADMIN_PASSWORD.length < 8) fail("ADMIN_PASSWORD ausente o menor a 8 caracteres.");
 

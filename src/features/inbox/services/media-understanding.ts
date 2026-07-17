@@ -1,6 +1,6 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateText } from "ai";
-import { createClient as svcClient } from "@supabase/supabase-js";
+import { svc } from "@/lib/supabase-svc";
 import { getOpenRouterApiKey } from "./openrouter";
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -15,13 +15,6 @@ const BUCKET = "whatsapp-media";
 /** Multimodal model used only for media→text. Overridable via env. */
 const UNDERSTANDING_MODEL =
   process.env.MEDIA_UNDERSTANDING_MODEL ?? "google/gemini-2.5-flash";
-
-function svc() {
-  return svcClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  );
-}
 
 async function downloadBytes(storagePath: string): Promise<Uint8Array | null> {
   const { data, error } = await svc()

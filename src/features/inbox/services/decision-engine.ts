@@ -15,7 +15,7 @@ import type { Tool } from "@/features/tools/core/tool";
 function svc() {
   return createSbClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    process.env.SUPABASE_KEY_B64!,
   );
 }
 

@@ -1,15 +1,8 @@
-import { createClient as createSbClient } from "@supabase/supabase-js";
+import { svc } from "@/lib/supabase-svc";
 import { performance } from "node:perf_hooks";
 
 const LLM_TURNS_PER_CONTACT_PER_HOUR = 20;
 const LLM_DAILY_BUDGET_TOKENS = 1_000_000;
-
-function svc() {
-  return createSbClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  );
-}
 
 interface RecordLlmUsageOpts {
   workspaceId: string;
@@ -38,7 +31,7 @@ export async function recordLlmUsage(opts: RecordLlmUsageOpts): Promise<void> {
 
   const totalTokens = promptTokens + completionTokens;
 
-  await supabase.from("events").insert({
+  const { error } = await supabase.from("events").insert({
     type: "llm_usage",
     level: "info",
     workspace_id: workspaceId,
@@ -51,6 +44,10 @@ export async function recordLlmUsage(opts: RecordLlmUsageOpts): Promise<void> {
       contact_id: contactId,
     },
   });
+
+  if (error) {
+    throw new Error(`Failed to record LLM usage: ${error.message}`);
+  }
 }
 
 interface RateLimitResult {

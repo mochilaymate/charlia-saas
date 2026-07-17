@@ -37,7 +37,7 @@ export default async function SettingsPage() {
 
   const svc = createSbClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    process.env.SUPABASE_KEY_B64!,
   );
 
   const [

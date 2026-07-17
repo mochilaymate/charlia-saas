@@ -91,7 +91,7 @@ se configura por workspace en la app, paso 10.)
 ```bash
 NEXT_PUBLIC_SUPABASE_URL='https://xxxx.supabase.co' \
 NEXT_PUBLIC_SUPABASE_ANON_KEY='eyJ...' \
-SUPABASE_SERVICE_ROLE_KEY='eyJ...' \
+SUPABASE_KEY_B64='eyJ...' \
 OPENROUTER_API_KEY='sk-or-...' \
 node scripts/setup.mjs env
 ```

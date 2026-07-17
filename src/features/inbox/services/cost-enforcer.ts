@@ -7,7 +7,7 @@ import { createClient as createSbClient } from "@supabase/supabase-js";
 function svc() {
   return createSbClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    process.env.SUPABASE_KEY_B64!,
   );
 }
 
@@ -71,7 +71,7 @@ export async function enforceCostPolicy(
 
   if (totalTokensToday >= DAILY_TOKEN_WARN_THRESHOLD) {
     // Insert an observable alert event — visible in the events stream
-    await supabase.from("events").insert({
+    const { error: alertError } = await supabase.from("events").insert({
       type: "cost_alert",
       level: "warn",
       workspace_id: workspaceId,
@@ -81,6 +81,10 @@ export async function enforceCostPolicy(
         hard_limit: DAILY_TOKEN_HARD_LIMIT,
       },
     });
+
+    if (alertError) {
+      console.error("[cost-enforcer] failed to record alert:", alertError);
+    }
 
     console.warn(
       `[cost-enforcer] workspace=${workspaceId} warn threshold crossed: ${totalTokensToday} tokens`,

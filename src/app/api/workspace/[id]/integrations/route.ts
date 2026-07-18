@@ -44,7 +44,7 @@ export async function GET(
 
   const svc = svcClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_KEY_B64!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
 
   const { data } = await svc
@@ -108,7 +108,7 @@ export async function PUT(
 
   const svc = svcClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_KEY_B64!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
 
   // Load existing to merge (don't overwrite masked values)

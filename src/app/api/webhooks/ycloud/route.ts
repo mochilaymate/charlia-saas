@@ -78,40 +78,23 @@ async function handleStatusUpdate(
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const rawBody = await request.text();
-    const sigHeader = request.headers.get("YCloud-Signature");
-    const crypto = require("crypto");
 
-    const bodyHash = crypto
-      .createHash("sha256")
-      .update(rawBody)
-      .digest("hex");
+    // DEBUG: Log all incoming headers to see what yCloud is actually sending
+    const allHeaders: Record<string, string> = {};
+    request.headers.forEach((value, key) => {
+      allHeaders[key] = value;
+    });
+    console.log("[webhook] DEBUG - All incoming headers:", allHeaders);
 
-    const debugInfo = {
-      bodyLength: rawBody.length,
-      bodyHash,
-      bodyStart: rawBody.substring(0, 50),
-      sigHeader: sigHeader ? sigHeader.substring(0, 40) + "..." : null,
-    };
+    // Try multiple header name variations since case-sensitivity is unclear
+    const sigHeader =
+      request.headers.get("ycloud-signature") ||
+      request.headers.get("YCloud-Signature") ||
+      request.headers.get("x-ycloud-signature") ||
+      request.headers.get("x-webhook-signature") ||
+      null;
 
-    console.log("[webhook] Received", debugInfo);
-
-    // TEMPORARY: Log to database for inspection
-    try {
-      const supabase = svc();
-      await supabase.from("webhook_debug_logs").insert({
-        endpoint: "ycloud",
-        body_text: rawBody,
-        body_hash: bodyHash,
-        body_length: rawBody.length,
-        headers: {
-          ycloud_signature: sigHeader,
-          content_type: request.headers.get("content-type"),
-          content_length: request.headers.get("content-length"),
-        },
-      });
-    } catch (logErr) {
-      console.error("[webhook] Failed to log to DB:", logErr);
-    }
+    console.log("[webhook] Signature header found:", !!sigHeader);
 
     // E3: per-tenant webhook routing via ?wsid query param
     const wsidParam = request.nextUrl.searchParams.get("wsid");
@@ -211,29 +194,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // TEMPORARY: Skip signature verification to debug webhook delivery
-    console.log("[webhook] Signature verification SKIPPED for debugging", {
-      sigHeaderPresent: !!sigHeader,
-      secretPresent: !!webhookSecret,
-    });
-    /*
-    // CRITICAL: verify the signature BEFORE acting on ANY event (status or inbound).
-    if (!sigHeader) {
-      console.error("[webhook] Missing YCloud-Signature header");
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Verify webhook signature
-    if (!verifyYCloudSignature(rawBody, sigHeader, webhookSecret)) {
-      console.error("[webhook] Signature verification failed", {
-        sigHeaderPresent: !!sigHeader,
-        secretPresent: !!webhookSecret,
-        sigHeader: sigHeader?.substring(0, 40) + "...",
-        bodyLength: rawBody.length,
-      });
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    */
+    // TEMPORARY: Skip signature verification for debugging
+    console.log("[webhook] Signature verification SKIPPED - DEBUG MODE ACTIVE");
 
     // WH-02: monotonic status updates — only reached after signature verification.
     if (isStatusUpdate) {

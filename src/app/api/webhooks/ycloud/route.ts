@@ -77,6 +77,14 @@ async function handleStatusUpdate(
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
+    console.log("[webhook] POST received");
+    console.log("[webhook] Headers:", {
+      ycloud: request.headers.get("YCloud-Signature"),
+      contentType: request.headers.get("Content-Type"),
+      contentLength: request.headers.get("Content-Length"),
+      allHeaders: Array.from(request.headers.keys()),
+    });
+
     const rawBody = await request.text();
     const sigHeader = request.headers.get("YCloud-Signature");
 

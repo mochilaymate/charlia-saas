@@ -174,6 +174,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    console.log("[webhook] Verifying signature", {
+      bodyLength: rawBody.length,
+      headerLength: sigHeader.length,
+      headerPreview: sigHeader.substring(0, 30) + "...",
+      secretLength: webhookSecret.length,
+      secretPreview: webhookSecret.substring(0, 20) + "...",
+    });
+
     if (!verifyYCloudSignature(rawBody, sigHeader, webhookSecret)) {
       console.error(
         "[webhook] Signature verification failed",

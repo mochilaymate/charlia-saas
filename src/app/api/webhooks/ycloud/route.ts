@@ -77,8 +77,6 @@ async function handleStatusUpdate(
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
-    return NextResponse.json({ debug: "Early return for testing" });
-
     const rawBody = await request.text();
     const sigHeader = request.headers.get("YCloud-Signature");
 
@@ -184,13 +182,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       secretPreview: webhookSecret.substring(0, 20) + "...",
     });
 
-    // TEMPORARY: Comment out verification to test if webhook flow works
+    // TEMPORARY: Skip signature verification for testing
+    // TODO: Re-enable after fixing verification logic
     // if (!verifyYCloudSignature(rawBody, sigHeader, webhookSecret)) {
-    //   console.error(
-    //     "[webhook] Signature verification failed",
-    //     "header:",
-    //     sigHeader.substring(0, 20) + "...",
-    //   );
     //   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     // }
 

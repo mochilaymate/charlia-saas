@@ -79,16 +79,39 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const rawBody = await request.text();
     const sigHeader = request.headers.get("YCloud-Signature");
+    const crypto = require("crypto");
 
-    console.log("[webhook] Received", {
+    const bodyHash = crypto
+      .createHash("sha256")
+      .update(rawBody)
+      .digest("hex");
+
+    const debugInfo = {
       bodyLength: rawBody.length,
-      bodyHash: require("crypto")
-        .createHash("sha256")
-        .update(rawBody)
-        .digest("hex"),
+      bodyHash,
       bodyStart: rawBody.substring(0, 50),
       sigHeader: sigHeader ? sigHeader.substring(0, 40) + "..." : null,
-    });
+    };
+
+    console.log("[webhook] Received", debugInfo);
+
+    // TEMPORARY: Log to database for inspection
+    try {
+      const supabase = svc();
+      await supabase.from("webhook_debug_logs").insert({
+        endpoint: "ycloud",
+        body_text: rawBody,
+        body_hash: bodyHash,
+        body_length: rawBody.length,
+        headers: {
+          ycloud_signature: sigHeader,
+          content_type: request.headers.get("content-type"),
+          content_length: request.headers.get("content-length"),
+        },
+      });
+    } catch (logErr) {
+      console.error("[webhook] Failed to log to DB:", logErr);
+    }
 
     // E3: per-tenant webhook routing via ?wsid query param
     const wsidParam = request.nextUrl.searchParams.get("wsid");

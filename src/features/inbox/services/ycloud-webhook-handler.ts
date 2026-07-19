@@ -14,91 +14,44 @@ export function verifyYCloudSignature(
   secret: string,
 ): boolean {
   try {
-    if (!header) {
-      console.error("[verifyYCloudSignature] No header provided");
-      return false;
-    }
-
-    console.log("[verifyYCloudSignature] Parsing header", {
-      headerLength: header.length,
-      headerStart: header.substring(0, 40),
-      headerEnd: header.substring(Math.max(0, header.length - 20)),
-    });
+    if (!header || !secret) return false;
 
     // Parse "t=1234567890,s=abcdef..."
     const tMatch = header.match(/t=(\d+)/);
     const sMatch = header.match(/s=([0-9a-fA-F]+)/);
-    if (!tMatch || !sMatch) {
-      console.error("[verifyYCloudSignature] Header format invalid", {
-        has_t: !!tMatch,
-        has_s: !!sMatch,
-        headerForDebug: header,
-      });
-      return false;
-    }
+    if (!tMatch || !sMatch) return false;
 
     const ts = tMatch[1];
-    const receivedSig = sMatch[1];
+    const receivedSig = sMatch[1].toLowerCase();
 
     // Anti-replay: reject if timestamp is more than 300s from now
     const nowSec = Math.floor(
       (performance.timeOrigin + performance.now()) / 1000,
     );
-    const timeDiff = Math.abs(nowSec - parseInt(ts, 10));
-    if (timeDiff > 300) {
-      console.error("[verifyYCloudSignature] Timestamp too old", {
-        now: nowSec,
-        ts: parseInt(ts, 10),
-        diff: timeDiff,
-      });
-      return false;
-    }
+    if (Math.abs(nowSec - parseInt(ts, 10)) > 300) return false;
 
     // Compute expected HMAC
     const message = `${ts}.${rawBody}`;
-
-    console.log("[verifyYCloudSignature] Computing HMAC", {
-      ts,
-      rawBodyLength: rawBody.length,
-      rawBodyStart: rawBody.substring(0, 50),
-      messageLength: message.length,
-      secretLength: secret.length,
-    });
-
     const expectedHex = createHmac("sha256", secret)
       .update(message)
-      .digest("hex");
+      .digest("hex")
+      .toLowerCase();
 
-    console.log("[verifyYCloudSignature] HMAC computed", {
-      expectedLength: expectedHex.length,
-      receivedLength: receivedSig.length,
-      expectedStart: expectedHex.substring(0, 20),
-      receivedStart: receivedSig.substring(0, 20),
-    });
-
-    // Verify signature length matches (constant-time: fail length check first before comparison)
-    if (expectedHex.length !== receivedSig.length) {
-      console.error("[verifyYCloudSignature] Signature length mismatch", {
-        expected: expectedHex.length,
-        received: receivedSig.length,
+    // Simple string comparison first for debugging
+    if (expectedHex !== receivedSig) {
+      console.log("[webhook-sig] Mismatch", {
+        ts,
+        bodyLen: rawBody.length,
+        secretLen: secret.length,
+        expected: expectedHex,
+        received: receivedSig,
       });
       return false;
     }
 
-    // Constant-time hex comparison
-    const expectedBuf = Buffer.from(expectedHex, "hex");
-    const receivedBuf = Buffer.from(receivedSig, "hex");
-
-    const matches = timingSafeEqual(expectedBuf, receivedBuf);
-    if (!matches) {
-      console.error("[verifyYCloudSignature] Signature mismatch", {
-        expected: expectedHex.substring(0, 20) + "...",
-        received: receivedSig.substring(0, 20) + "...",
-      });
-    }
-    return matches;
+    return true;
   } catch (error) {
-    console.error("[verifyYCloudSignature] Exception:", error);
+    console.error("[verifyYCloudSignature] Error:", error);
     return false;
   }
 }

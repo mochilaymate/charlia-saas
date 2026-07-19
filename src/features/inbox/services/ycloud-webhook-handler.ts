@@ -14,12 +14,21 @@ export function verifyYCloudSignature(
   secret: string,
 ): boolean {
   try {
-    if (!header) return false;
+    if (!header) {
+      console.error("[verifyYCloudSignature] No header provided");
+      return false;
+    }
 
     // Parse "t=1234567890,s=abcdef..."
     const tMatch = header.match(/t=(\d+)/);
     const sMatch = header.match(/s=([0-9a-fA-F]+)/);
-    if (!tMatch || !sMatch) return false;
+    if (!tMatch || !sMatch) {
+      console.error("[verifyYCloudSignature] Header format invalid", {
+        has_t: !!tMatch,
+        has_s: !!sMatch,
+      });
+      return false;
+    }
 
     const ts = tMatch[1];
     const receivedSig = sMatch[1];
@@ -28,7 +37,15 @@ export function verifyYCloudSignature(
     const nowSec = Math.floor(
       (performance.timeOrigin + performance.now()) / 1000,
     );
-    if (Math.abs(nowSec - parseInt(ts, 10)) > 300) return false;
+    const timeDiff = Math.abs(nowSec - parseInt(ts, 10));
+    if (timeDiff > 300) {
+      console.error("[verifyYCloudSignature] Timestamp too old", {
+        now: nowSec,
+        ts: parseInt(ts, 10),
+        diff: timeDiff,
+      });
+      return false;
+    }
 
     // Compute expected HMAC
     const message = `${ts}.${rawBody}`;
@@ -37,14 +54,28 @@ export function verifyYCloudSignature(
       .digest("hex");
 
     // Verify signature length matches (constant-time: fail length check first before comparison)
-    if (expectedHex.length !== receivedSig.length) return false;
+    if (expectedHex.length !== receivedSig.length) {
+      console.error("[verifyYCloudSignature] Signature length mismatch", {
+        expected: expectedHex.length,
+        received: receivedSig.length,
+      });
+      return false;
+    }
 
     // Constant-time hex comparison
     const expectedBuf = Buffer.from(expectedHex, "hex");
     const receivedBuf = Buffer.from(receivedSig, "hex");
 
-    return timingSafeEqual(expectedBuf, receivedBuf);
-  } catch {
+    const matches = timingSafeEqual(expectedBuf, receivedBuf);
+    if (!matches) {
+      console.error("[verifyYCloudSignature] Signature mismatch", {
+        expected: expectedHex.substring(0, 20) + "...",
+        received: receivedSig.substring(0, 20) + "...",
+      });
+    }
+    return matches;
+  } catch (error) {
+    console.error("[verifyYCloudSignature] Exception:", error);
     return false;
   }
 }

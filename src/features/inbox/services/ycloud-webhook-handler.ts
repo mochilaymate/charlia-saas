@@ -19,6 +19,12 @@ export function verifyYCloudSignature(
       return false;
     }
 
+    console.log("[verifyYCloudSignature] Parsing header", {
+      headerLength: header.length,
+      headerStart: header.substring(0, 40),
+      headerEnd: header.substring(Math.max(0, header.length - 20)),
+    });
+
     // Parse "t=1234567890,s=abcdef..."
     const tMatch = header.match(/t=(\d+)/);
     const sMatch = header.match(/s=([0-9a-fA-F]+)/);
@@ -26,6 +32,7 @@ export function verifyYCloudSignature(
       console.error("[verifyYCloudSignature] Header format invalid", {
         has_t: !!tMatch,
         has_s: !!sMatch,
+        headerForDebug: header,
       });
       return false;
     }

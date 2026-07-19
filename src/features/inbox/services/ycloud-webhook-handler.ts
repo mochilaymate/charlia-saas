@@ -37,19 +37,17 @@ export function verifyYCloudSignature(
       .digest("hex")
       .toLowerCase();
 
-    // Simple string comparison first for debugging
-    if (expectedHex !== receivedSig) {
-      console.log("[webhook-sig] Mismatch", {
-        ts,
-        bodyLen: rawBody.length,
-        secretLen: secret.length,
-        expected: expectedHex,
-        received: receivedSig,
-      });
+    // Length must match before comparing
+    if (expectedHex.length !== receivedSig.length) return false;
+
+    // Constant-time comparison using timingSafeEqual
+    try {
+      const expectedBuf = Buffer.from(expectedHex, "hex");
+      const receivedBuf = Buffer.from(receivedSig, "hex");
+      return timingSafeEqual(expectedBuf, receivedBuf);
+    } catch {
       return false;
     }
-
-    return true;
   } catch (error) {
     console.error("[verifyYCloudSignature] Error:", error);
     return false;

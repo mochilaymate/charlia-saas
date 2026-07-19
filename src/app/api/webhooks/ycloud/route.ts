@@ -174,19 +174,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.log("[webhook] Verifying signature", {
-      bodyLength: rawBody.length,
-      headerLength: sigHeader.length,
-      headerPreview: sigHeader.substring(0, 30) + "...",
-      secretLength: webhookSecret.length,
-      secretPreview: webhookSecret.substring(0, 20) + "...",
-    });
 
-    // TEMPORARY: Skip signature verification for testing
-    // TODO: Re-enable after fixing verification logic
-    // if (!verifyYCloudSignature(rawBody, sigHeader, webhookSecret)) {
-    //   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    // }
+    // Verify webhook signature
+    if (!verifyYCloudSignature(rawBody, sigHeader, webhookSecret)) {
+      console.error("[webhook] Signature verification failed");
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     // WH-02: monotonic status updates — only reached after signature verification.
     if (isStatusUpdate) {

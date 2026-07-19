@@ -31,17 +31,20 @@ hmac.update(message);
 const signature = hmac.digest("hex");
 
 const header = `t=${ts},s=${signature}`;
+const bodyHash = crypto.createHash("sha256").update(rawBody).digest("hex");
 
 console.log("Webhook Test Details\n");
 console.log("Secret:", secret);
 console.log("Timestamp:", ts);
 console.log("Raw Body:", rawBody);
 console.log("Raw Body Length:", rawBody.length);
+console.log("Raw Body SHA256:", bodyHash);
 console.log("Message:", message);
 console.log("Message Length:", message.length);
 console.log("Signature:", signature);
 console.log("Header:", header);
-console.log("\n\nSending to webhook...\n");
+console.log("\n⚠️  Check Vercel logs to see received body hash\n");
+console.log("Sending to webhook...\n");
 
 // Enviar con HTTPS
 const options = {

@@ -164,6 +164,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // No resolvable workspace → 401. A status update without a resolvable
     // (and below, verified) workspace must NEVER fall through to 200.
     if (!ws) {
+      console.error("[webhook] No workspace found", {
+        wsidParam,
+        toPhone,
+        reason: wsidParam
+          ? "integration lookup by workspace_id failed"
+          : "fallback phone lookup returned no match",
+      });
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -174,7 +181,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const webhookSecret = creds.webhook_signing_secret?.trim();
     if (!webhookSecret) {
-      console.error("[webhook] Missing webhook_signing_secret in credentials");
+      console.error("[webhook] Missing webhook_signing_secret in credentials", {
+        hasCredentials: !!creds,
+        credentialsKeys: Object.keys(creds || {}),
+      });
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -187,7 +197,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // Verify webhook signature
     if (!verifyYCloudSignature(rawBody, sigHeader, webhookSecret)) {
-      console.error("[webhook] Signature verification failed");
+      console.error("[webhook] Signature verification failed", {
+        sigHeaderPresent: !!sigHeader,
+        secretPresent: !!webhookSecret,
+        sigHeader: sigHeader?.substring(0, 40) + "...",
+        bodyLength: rawBody.length,
+      });
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

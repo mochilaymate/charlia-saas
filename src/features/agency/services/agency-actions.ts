@@ -315,8 +315,13 @@ export async function getAllWorkspacesWithStats(): Promise<GetWorkspacesResult> 
     .order("created_at", { ascending: false });
 
   if (wsError) {
-    console.error("[agency] fetch workspaces error:", wsError);
-    return { error: "Error al cargar workspaces" };
+    console.error("[agency] fetch workspaces error:", {
+      message: wsError.message,
+      details: (wsError as any).details,
+      code: (wsError as any).code,
+      hint: (wsError as any).hint,
+    });
+    return { error: `Error al cargar workspaces: ${wsError.message}` };
   }
 
   if (!workspaces || workspaces.length === 0) {

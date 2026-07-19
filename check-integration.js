@@ -8,68 +8,55 @@ const serviceKey =
 
 const supabase = createClient(supabaseUrl, serviceKey);
 
-async function checkIntegration() {
+async function check() {
   const wsid = "5f4f8d53-c1ff-41e9-b5f0-1ceec3261366";
 
-  console.log("Checking for YCloud integration...\n");
+  console.log("Checking YCloud integration for workspace:", wsid, "\n");
 
   try {
-    const { data, error } = await supabase
+    // Check exact integration for this workspace
+    const { data: integration, error } = await supabase
       .from("integrations")
-      .select("workspace_id, provider, enabled, credentials, config")
+      .select("*")
       .eq("workspace_id", wsid)
-      .eq("provider", "ycloud");
+      .eq("provider", "ycloud")
+      .single();
 
     if (error) {
-      console.error("Error:", error);
+      console.log("❌ Error finding integration:", error.message);
       return;
     }
 
-    if (data && data.length > 0) {
-      const integration = data[0];
-      console.log("✓ Integration found!");
-      console.log("  Workspace ID:", integration.workspace_id);
-      console.log("  Provider:", integration.provider);
-      console.log("  Enabled:", integration.enabled);
+    if (!integration) {
+      console.log("❌ No YCloud integration found for this workspace");
+      return;
+    }
 
-      if (integration.credentials) {
-        const creds = integration.credentials;
-        console.log("  Webhook Secret:", creds.webhook_signing_secret ? "✓ Present" : "✗ Missing");
-        if (creds.webhook_signing_secret) {
-          console.log(
-            "    Value:",
-            creds.webhook_signing_secret.substring(0, 20) + "...",
-          );
-        }
-      }
+    console.log("✓ Integration found:");
+    console.log("  ID:", integration.id);
+    console.log("  Workspace ID:", integration.workspace_id);
+    console.log("  Provider:", integration.provider);
+    console.log("  Enabled:", integration.enabled);
+    console.log("  Credentials keys:", Object.keys(integration.credentials || {}));
+    console.log("  Config:", integration.config);
+    console.log("");
 
-      if (integration.config) {
-        console.log("  Config:", JSON.stringify(integration.config, null, 2));
-      }
+    // Check if webhook_signing_secret exists
+    if (!integration.credentials?.webhook_signing_secret) {
+      console.log("❌ webhook_signing_secret is EMPTY");
     } else {
-      console.log(
-        "✗ No YCloud integration found for workspace",
-        wsid,
-      );
-      console.log("\nSearching for ALL integrations in workspace...");
+      console.log("✓ webhook_signing_secret:", integration.credentials.webhook_signing_secret.substring(0, 20) + "...");
+    }
 
-      const { data: allIntegrations } = await supabase
-        .from("integrations")
-        .select("workspace_id, provider, enabled")
-        .eq("workspace_id", wsid);
-
-      if (allIntegrations && allIntegrations.length > 0) {
-        console.log("Found integrations:");
-        allIntegrations.forEach((i) => {
-          console.log(`  - ${i.provider} (enabled: ${i.enabled})`);
-        });
-      } else {
-        console.log("No integrations found for this workspace");
-      }
+    // Check if phone_number exists
+    if (!integration.config?.phone_number) {
+      console.log("❌ phone_number is EMPTY");
+    } else {
+      console.log("✓ phone_number:", integration.config.phone_number);
     }
   } catch (err) {
-    console.error("Exception:", err);
+    console.error("Error:", err);
   }
 }
 
-checkIntegration();
+check();

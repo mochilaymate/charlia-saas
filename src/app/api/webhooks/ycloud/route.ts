@@ -162,13 +162,24 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       webhook_signing_secret?: string;
     };
 
-    const webhookSecret = creds.webhook_signing_secret;
+    const webhookSecret = creds.webhook_signing_secret?.trim();
     if (!webhookSecret) {
+      console.error("[webhook] Missing webhook_signing_secret in credentials");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // CRITICAL: verify the signature BEFORE acting on ANY event (status or inbound).
+    if (!sigHeader) {
+      console.error("[webhook] Missing YCloud-Signature header");
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     if (!verifyYCloudSignature(rawBody, sigHeader, webhookSecret)) {
+      console.error(
+        "[webhook] Signature verification failed",
+        "header:",
+        sigHeader.substring(0, 20) + "...",
+      );
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

@@ -18,7 +18,7 @@ export function verifyYCloudSignature(
 
     // Parse "t=1234567890,s=abcdef..."
     const tMatch = header.match(/t=(\d+)/);
-    const sMatch = header.match(/s=([0-9a-f]+)/i);
+    const sMatch = header.match(/s=([0-9a-fA-F]+)/);
     if (!tMatch || !sMatch) return false;
 
     const ts = tMatch[1];
@@ -36,21 +36,14 @@ export function verifyYCloudSignature(
       .update(message)
       .digest("hex");
 
-    // Constant-time comparison (pad to equal length if lengths differ — mismatched
-    // lengths leak info, so we pad before comparing)
-    const a = Buffer.from(expectedHex.padEnd(receivedSig.length, "0"), "utf8");
-    const b = Buffer.from(receivedSig.padEnd(expectedHex.length, "0"), "utf8");
+    // Verify signature length matches (constant-time: fail length check first before comparison)
+    if (expectedHex.length !== receivedSig.length) return false;
 
-    // timingSafeEqual requires same-length buffers
-    const len = Math.max(a.length, b.length);
-    const aBuf = Buffer.alloc(len);
-    const bBuf = Buffer.alloc(len);
-    a.copy(aBuf);
-    b.copy(bBuf);
+    // Constant-time hex comparison
+    const expectedBuf = Buffer.from(expectedHex, "hex");
+    const receivedBuf = Buffer.from(receivedSig, "hex");
 
-    return (
-      timingSafeEqual(aBuf, bBuf) && expectedHex.length === receivedSig.length
-    );
+    return timingSafeEqual(expectedBuf, receivedBuf);
   } catch {
     return false;
   }

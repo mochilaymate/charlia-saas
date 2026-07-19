@@ -49,9 +49,25 @@ export function verifyYCloudSignature(
 
     // Compute expected HMAC
     const message = `${ts}.${rawBody}`;
+
+    console.log("[verifyYCloudSignature] Computing HMAC", {
+      ts,
+      rawBodyLength: rawBody.length,
+      rawBodyStart: rawBody.substring(0, 50),
+      messageLength: message.length,
+      secretLength: secret.length,
+    });
+
     const expectedHex = createHmac("sha256", secret)
       .update(message)
       .digest("hex");
+
+    console.log("[verifyYCloudSignature] HMAC computed", {
+      expectedLength: expectedHex.length,
+      receivedLength: receivedSig.length,
+      expectedStart: expectedHex.substring(0, 20),
+      receivedStart: receivedSig.substring(0, 20),
+    });
 
     // Verify signature length matches (constant-time: fail length check first before comparison)
     if (expectedHex.length !== receivedSig.length) {

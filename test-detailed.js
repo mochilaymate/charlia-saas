@@ -78,5 +78,7 @@ req.on("error", (error) => {
   process.exit(1);
 });
 
-req.write(rawBody);
+// Write as Buffer to ensure exact encoding
+const bodyBuffer = Buffer.from(rawBody, "utf8");
+req.write(bodyBuffer);
 req.end();

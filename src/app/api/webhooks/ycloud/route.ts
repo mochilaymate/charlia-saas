@@ -80,6 +80,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const rawBody = await request.text();
     const sigHeader = request.headers.get("YCloud-Signature");
 
+    console.log("[webhook] Received", {
+      bodyLength: rawBody.length,
+      bodyHash: require("crypto")
+        .createHash("sha256")
+        .update(rawBody)
+        .digest("hex"),
+      bodyStart: rawBody.substring(0, 50),
+      sigHeader: sigHeader ? sigHeader.substring(0, 40) + "..." : null,
+    });
+
     // E3: per-tenant webhook routing via ?wsid query param
     const wsidParam = request.nextUrl.searchParams.get("wsid");
 

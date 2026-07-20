@@ -350,3 +350,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     });
 
     return NextResponse.json({ received: true, buffered: true });
+  } catch (err) {
+    // SEC-09: never log full error objects — they may contain credentials or raw payloads
+    console.error(
+      "[webhook] unhandled error:",
+      err instanceof Error ? err.message : "unknown error",
+    );
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+  }
+}

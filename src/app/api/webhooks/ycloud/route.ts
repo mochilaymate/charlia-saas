@@ -80,22 +80,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const rawBody = await request.text();
 
-    // DEBUG: Log all incoming headers to see what yCloud is actually sending
-    const allHeaders: Record<string, string> = {};
-    request.headers.forEach((value, key) => {
-      allHeaders[key] = value;
-    });
-    console.log("[webhook] DEBUG - All incoming headers:", allHeaders);
-
-    // Try multiple header name variations since case-sensitivity is unclear
+    // Header names are case-insensitive per the Fetch spec, but we accept a
+    // couple of provider-observed variants defensively.
     const sigHeader =
       request.headers.get("ycloud-signature") ||
-      request.headers.get("YCloud-Signature") ||
       request.headers.get("x-ycloud-signature") ||
       request.headers.get("x-webhook-signature") ||
       null;
-
-    console.log("[webhook] Signature header found:", !!sigHeader);
 
     // E3: per-tenant webhook routing via ?wsid query param
     const wsidParam = request.nextUrl.searchParams.get("wsid");

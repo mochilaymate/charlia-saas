@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { performance } from "node:perf_hooks";
+import { z } from "zod";
 
 /**
  * Verifies a YCloud webhook signature.
@@ -108,15 +109,91 @@ function toMessageType(raw: string): string {
   return MESSAGE_TYPE_ENUM.has(raw) ? raw : "text";
 }
 
+// Schema validation for YCloud webhook payload — prevents injection & oversized payloads
+const YCloudWebhookSchema = z.object({
+  type: z.string(),
+  createTime: z.string().datetime().optional(),
+  whatsappInboundMessage: z.object({
+    wamid: z.string().max(50),
+    from: z.string().max(20),
+    to: z.string().max(20),
+    type: z.string().max(20),
+    text: z
+      .object({
+        body: z.string().max(4096),
+      })
+      .optional(),
+    customerProfile: z
+      .object({
+        name: z.string().max(256),
+      })
+      .optional(),
+    image: z
+      .object({
+        id: z.string().max(100),
+        link: z.string().url().max(2048),
+        mimeType: z.string().max(50).optional(),
+        mime_type: z.string().max(50).optional(),
+        caption: z.string().max(4096).optional(),
+      })
+      .optional(),
+    audio: z
+      .object({
+        id: z.string().max(100),
+        link: z.string().url().max(2048),
+        mimeType: z.string().max(50).optional(),
+        mime_type: z.string().max(50).optional(),
+      })
+      .optional(),
+    voice: z
+      .object({
+        id: z.string().max(100),
+        link: z.string().url().max(2048),
+        mimeType: z.string().max(50).optional(),
+        mime_type: z.string().max(50).optional(),
+      })
+      .optional(),
+    video: z
+      .object({
+        id: z.string().max(100),
+        link: z.string().url().max(2048),
+        mimeType: z.string().max(50).optional(),
+        mime_type: z.string().max(50).optional(),
+        caption: z.string().max(4096).optional(),
+      })
+      .optional(),
+    document: z
+      .object({
+        id: z.string().max(100),
+        link: z.string().url().max(2048),
+        filename: z.string().max(256).optional(),
+        mimeType: z.string().max(50).optional(),
+        mime_type: z.string().max(50).optional(),
+      })
+      .optional(),
+    sticker: z
+      .object({
+        id: z.string().max(100),
+        link: z.string().url().max(2048),
+        mimeType: z.string().max(50).optional(),
+        mime_type: z.string().max(50).optional(),
+      })
+      .optional(),
+  }),
+});
+
 /**
  * Parses and normalises a raw YCloud webhook body.
  * Returns null if the event is not an inbound message or is malformed.
+ * Validates payload size and structure with Zod schema.
  */
 export function parseInbound(body: unknown): NormalizedInbound | null {
   try {
-    if (typeof body !== "object" || body === null) return null;
+    // Validate against schema first — rejects oversized/malformed payloads
+    const validated = YCloudWebhookSchema.safeParse(body);
+    if (!validated.success) return null;
 
-    const event = body as Record<string, unknown>;
+    const event = validated.data as Record<string, unknown>;
 
     // Only process inbound message events
     if (event.type !== "whatsapp.inbound_message.received") return null;

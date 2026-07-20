@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse, after } from "next/server";
 import { createClient as createSbClient } from "@supabase/supabase-js";
+import { createHash } from "node:crypto";
 import {
   verifyYCloudSignature,
   parseInbound,
@@ -196,13 +197,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // Verify signature
     if (!sigHeader) {
-      console.error("[webhook] Missing signature header");
+      const wsHash = createHash("sha256").update(wsidParam || toPhone || "unknown").digest("hex").substring(0, 8);
+      console.error("[webhook] security_event type=missing_signature workspace=" + wsHash + " timestamp=" + new Date().toISOString());
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const verified = verifyYCloudSignature(rawBody, sigHeader, webhookSecret);
     if (!verified) {
-      console.error("[webhook] Invalid signature");
+      const wsHash = createHash("sha256").update(wsidParam || toPhone || "unknown").digest("hex").substring(0, 8);
+      console.error("[webhook] security_event type=invalid_signature workspace=" + wsHash + " timestamp=" + new Date().toISOString());
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -223,6 +226,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const workspaceId = ws.workspace_id as string;
+
+    // SEC-06: Rate-limit check BEFORE processing — prevent buffer flooding attacks
+    // Rate limits are enforced per contact across all conversations in the workspace
+    const { allowed: rateLimitAllowed, reason: rateLimitReason } = await checkRateLimits(
+      workspaceId,
+      normalized.from,
+    );
+    if (!rateLimitAllowed) {
+      console.warn("[webhook] rate limited before processing:", rateLimitReason ?? "unknown reason");
+      return NextResponse.json({ received: true, rateLimited: true });
+    }
+
     const { contact, conversation, message } = await processInbound(
       workspaceId,
       normalized,
@@ -291,14 +306,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ received: true, ai: false });
     }
 
-    // Rate-limit check — still runs here to avoid buffering rate-limited contacts
-    const { allowed, reason } = await checkRateLimits(workspaceId, contact.id);
-    if (!allowed) {
-      // SEC-09: log only non-sensitive fields (no credentials or contact PII)
-      console.warn("[webhook] rate limited:", reason ?? "unknown reason");
-      if (mediaJob) after(mediaJob);
-      return NextResponse.json({ received: true, rateLimited: true });
-    }
+    // Rate-limit already checked before processing — verified above at SEC-06
 
     // Buffer the message — AI reply is deferred to the cron job.
     // The silence window is configurable per workspace (YCloud settings).

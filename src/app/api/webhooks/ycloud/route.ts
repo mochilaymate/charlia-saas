@@ -194,8 +194,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // TEMPORARY: Skip signature verification for debugging
-    console.log("[webhook] Signature verification SKIPPED - DEBUG MODE ACTIVE");
+    // Verify signature
+    if (!sigHeader) {
+      console.error("[webhook] Missing signature header");
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const verified = verifyYCloudSignature(rawBody, sigHeader, webhookSecret);
+    if (!verified) {
+      console.error("[webhook] Invalid signature");
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     // WH-02: monotonic status updates — only reached after signature verification.
     if (isStatusUpdate) {
@@ -333,14 +342,3 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     });
 
     return NextResponse.json({ received: true, buffered: true });
-  } catch (err) {
-    // SEC-09: never log full error objects — they may contain credentials or raw payloads
-    console.error(
-      "[webhook] unhandled error:",
-      err instanceof Error ? err.message : "unknown error",
-    );
-    return NextResponse.json({ error: "Internal error" }, { status: 500 });
-  }
-}
-/ /   F O R C E   R E D E P L O Y   2 0 2 6 - 0 7 - 1 9   1 6 : 0 0 : 1 3  
- 

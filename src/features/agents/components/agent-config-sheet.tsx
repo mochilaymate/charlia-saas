@@ -48,7 +48,7 @@ export function AgentConfigSheet({
   onOpenChange,
   onSaved,
 }: Props) {
-  const meta = AGENT_TYPE_META[agent.type];
+  const meta = AGENT_TYPE_META[agent.type] ?? { label: "Agente", tagline: "", promptGuidance: [] };
   const [name, setName] = useState(agent.name);
   const [avatarKey, setAvatarKey] = useState(agent.avatarKey);
   const [model, setModel] = useState<string | null>(agent.model);

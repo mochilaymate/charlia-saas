@@ -24,7 +24,7 @@ function linesToArray(text: string): string[] {
 }
 
 export function GuidedPromptEditor({ workspaceId, agent, onPublished }: Props) {
-  const meta = AGENT_TYPE_META[agent.type];
+  const meta = AGENT_TYPE_META[agent.type] ?? { label: "Agente", tagline: "", promptGuidance: [] };
   const router = useRouter();
   const [body, setBody] = useState(agent.promptBody);
   const [rules, setRules] = useState(

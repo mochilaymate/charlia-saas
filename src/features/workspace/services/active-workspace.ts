@@ -13,6 +13,9 @@ export type ActiveWorkspace = { workspace_id: string; role: string };
  * otherwise falls back to the first active membership. Returns null when the
  * user has no active membership (caller decides where to send them).
  *
+ * Super admins can access a workspace via the cookie even without an explicit
+ * membership row — this mirrors the bypass in switchWorkspace().
+ *
  * Drop-in replacement for the old `.limit(1).single()` membership gate.
  */
 export async function getActiveWorkspace(
@@ -26,15 +29,32 @@ export async function getActiveWorkspace(
     .eq("is_active", true);
 
   const rows = (memberships ?? []) as MembershipRow[];
-  if (rows.length === 0) return null;
+  if (rows.length > 0) {
+    const selected = (await cookies()).get(ACTIVE_WORKSPACE_COOKIE)?.value;
+    const match = selected
+      ? rows.find((m) => m.workspace_id === selected)
+      : undefined;
 
+    const chosen = match ?? rows[0];
+    return { workspace_id: chosen.workspace_id, role: chosen.role };
+  }
+
+  // Super admins can operate on a workspace via the cookie even without
+  // an explicit membership row — same bypass as switchWorkspace().
   const selected = (await cookies()).get(ACTIVE_WORKSPACE_COOKIE)?.value;
-  const match = selected
-    ? rows.find((m) => m.workspace_id === selected)
-    : undefined;
+  if (selected) {
+    const { data: userRow } = await supabase
+      .from("users")
+      .select("is_super_admin")
+      .eq("id", userId)
+      .maybeSingle();
 
-  const chosen = match ?? rows[0];
-  return { workspace_id: chosen.workspace_id, role: chosen.role };
+    if (userRow?.is_super_admin) {
+      return { workspace_id: selected, role: "super_admin" };
+    }
+  }
+
+  return null;
 }
 
 /** Lists the user's active memberships with workspace names — for the switcher. */

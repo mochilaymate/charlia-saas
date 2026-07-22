@@ -19,12 +19,10 @@ interface Props {
 }
 
 export function AgentCard({ agent, busy, onConfigure, onActivate }: Props) {
-  const meta = AGENT_TYPE_META[agent.type];
+  const meta = AGENT_TYPE_META[agent.type] ?? { label: "Agente", tagline: "", promptGuidance: [] };
   const cat = findCatalogModel(agent.model);
   const Logo = cat ? PROVIDER_LOGOS[cat.provider] : null;
-  const modelLabel = cat
-    ? cat.model.label
-    : (agent.model ?? "Modelo del workspace");
+  const modelLabel = cat?.model?.label ?? (agent.model ?? "Modelo del workspace");
 
   return (
     <Card
